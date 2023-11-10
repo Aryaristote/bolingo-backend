@@ -21,7 +21,7 @@ const { DB_HOST, DB_USER, DB_PASSWORD, DB_NAME } = process.env;
 require('./passport');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 5001;
 
 // Middleware
 app.use(cookieParser('Bolingo@defaultpass'));
