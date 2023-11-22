@@ -5,8 +5,10 @@
   "main": "app.js",
   "scripts": {
     "start": "node app.js",
+    "build": "npm install && npm run build:custom",
+    "build:custom": "your-build-command-here",
     "test": "echo \"Error: no test specified\" && exit 1"
-  },
+  },  
   "author": "",
   "license": "ISC",
   "dependencies": {
