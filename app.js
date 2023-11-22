@@ -21,14 +21,13 @@ const { DB_HOST, DB_USER, DB_PASSWORD, DB_NAME } = process.env;
 require('./passport');
 
 const app = express();
-const PORT = 3000;
-// const PORT = process.env.PORT;
+const PORT = process.env.PORT || 5000;
 
 // Middleware
 app.use(cookieParser('Bolingo@defaultpass'));
 
 app.use(cors({
-  origin: ['http://localhost:3000'],
+  origin: '*',
   methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
   credentials: true,
 }));
@@ -73,6 +72,9 @@ sequelize
   .catch((err) => {
     console.error('Error connecting to the database:', err);
 });
+
+//Allow Proxy
+app.set('trust proxy', true);
 
 // Routes
 app.use(localLog);

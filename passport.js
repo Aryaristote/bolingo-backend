@@ -1,25 +1,17 @@
-const jwt = require('jsonwebtoken');
-const passport = require('passport'); 
 const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
+const { Op } = require('sequelize');
+const passport = require('passport'); 
 const User = require("./models/User");
-const GoogleStrategy = require('passport-google-oauth2').Strategy;
 const LocalStrategy = require('passport-local').Strategy;
 const FacebookStrategy = require("passport-facebook").Strategy;
+const GoogleStrategy = require('passport-google-oauth2').Strategy;
 
 const GOOGLE_CLIENT_ID = '930100866404-hhne9ted66u588sjlpkv1itilfke8qtt.apps.googleusercontent.com';
 const GOOGLE_CLIENT_SECRET = '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';
 
 FACEBOOK_APP_ID = "816054979961020"; 
 FACEBOOK_APP_SECRET = "166dd60b8378a203cc16e7ba768c514e";
-
-passport.serializeUser((user, done) => {
-  done(null, user._id);
-});
-
-passport.deserializeUser(async (userId, done) => {
-  const user = await User.findOne({ id: userId }); 
-  done(null, user);
-});
 
 //Google Login
 passport.use(new GoogleStrategy({
@@ -54,45 +46,56 @@ async function(request, accessToken, refreshToken, profile, done) {
   }
 ));
 
+// Local login 
 passport.use(
   new LocalStrategy(
     {
-      usernameField: 'emailOrPhone', // The field that can be email or phoneNumber
-      passwordField: 'password', // The password field
+      usernameField: 'username',
+      passwordField: 'password',
     },
-    async (emailOrPhone, password, done) => {
+    async (username, password, done) => {
       try {
         const user = await User.findOne({
-          $or: [{ email: emailOrPhone }, { phoneNumber: emailOrPhone }],
+          where: {
+            [Op.or]: [{ email: username }, { phoneNumber: username }],
+          },
         });
 
         if (!user) {
-          return done(null, false, { message: 'Invalid email or phoneNumber' });
-        }
-
-        const isUserVerified = await User.findOne({
-            $or: [{ email: emailOrPhone }, { phoneNumber: emailOrPhone }],
-            verified: true, 
-        });
-    
-        if (!isUserVerified) {
-            console.log('User is not verified');
-            return done(null, false, { message: 'User is not verified' });
+          console.log("Incorrect username")
+          return done(null, false, { status: 401, message: 'Incorrect username or password' });
         }
 
         const isPasswordMatch = await bcrypt.compare(password, user.password);
-        console.log("Love in air");
+
         if (!isPasswordMatch) {
-          return done(null, false, { message: 'Invalid password' });
+          console.log("Incorrect password")
+          return done(null, false, { status: 401, message: 'Incorrect username or password' });
         }
 
-        return done(null, user);
+        // Success: return user with a 200 status code
+        console.log("Connected: ", user)
+        return done(null, user, { status: 200 });
       } catch (error) {
-        return done(error); 
+        return done(error);
       }
     }
   )
 );
+
+passport.serializeUser((user, done) => {
+  done(null, user.id);
+});
+
+passport.deserializeUser(async (id, done) => {
+  try {
+    const user = await User.findByPk(id);
+    done(null, user);
+  } catch (error) {
+    done(error);
+  }
+});
+
 
 //Facebook Login
 passport.use(new FacebookStrategy({
